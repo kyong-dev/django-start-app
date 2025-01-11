@@ -1,0 +1,13 @@
+from django.db import models
+
+
+class {{ camel_case_app_name }}(models.Model):
+    xxxx = models.ForeignKey()
+
+    def __str__(self):
+        return self.id
+
+    class Meta:
+        db_table = "{{ app_name }}"
+        verbose_name = "xxxxx"
+        verbose_name_plural = "xxxxx"
