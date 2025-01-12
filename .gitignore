@@ -1,2 +1,7 @@
 venv/
 app_template.zip
+db.sqlite3
+manage.py
+static/
+mysite/
+djangotutorial/

@@ -14,7 +14,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Retrieve a list of {{ camel_case_app_name }}s",
         responses={200: {{ camel_case_app_name }}Serializer(many=True)},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -28,7 +28,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Retrieve a specific {{ camel_case_app_name }}",
         responses={200: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -39,7 +39,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
         operation_description="Create a new {{ camel_case_app_name }}",
         request_body={{ camel_case_app_name }}Serializer,
         responses={201: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -52,7 +52,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
         operation_description="Update an existing {{ camel_case_app_name }}",
         request_body={{ camel_case_app_name }}Serializer,
         responses={200: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -66,7 +66,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
         operation_description="Partially update an existing {{ camel_case_app_name }}",
         request_body={{ camel_case_app_name }}Serializer,
         responses={200: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True
@@ -75,7 +75,7 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Delete a specific {{ camel_case_app_name }}",
         responses={204: 'No Content'},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}']
     )
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -83,24 +83,15 @@ class {{ camel_case_app_name }}ViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProductBulkView(APIView):
+class {{ camel_case_app_name }}BulkView(APIView):
 
     @swagger_auto_schema(
         operation_description="Create a new {{ camel_case_app_name }}",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_ARRAY,
-            items=openapi.Parameter(
-                'body',
-                in_=openapi.IN_BODY,
-                description='List of objects that need to be created',
-                schema={{ camel_case_app_name }}Serializer()
-            )
-        ),
+        request_body={{ camel_case_app_name }}Serializer(many=True),
         responses={201: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        tags=['{{ camel_case_app_name }}_Bulk']
     )
     def post(self, request):
-        # Handling bulk create
         serializer = {{ camel_case_app_name }}Serializer(data=request.data, many=True)
         if serializer.is_valid():
             serializer.save()
@@ -108,28 +99,37 @@ class ProductBulkView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        operation_description="Update an existing {{ camel_case_app_name }}",
+        operation_description="Update existing {{ camel_case_app_name }}s or create if not existing",
         request_body=openapi.Schema(
             type=openapi.TYPE_ARRAY,
-            items=openapi.Parameter(
-                'body',
-                in_=openapi.IN_BODY,
-                description='List of objects that need to be updated',
-                schema={{ camel_case_app_name }}Serializer()
+            items=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='{{ camel_case_app_name }} ID'),
+                    '{{ app_name }}_name': openapi.Schema(type=openapi.TYPE_STRING, description='{{ camel_case_app_name }} Name')
+                }
             )
         ),
-        responses={200: {{ camel_case_app_name }}Serializer()},
-        tags['{{ camel_case_app_name }}']
+        responses={200: '{{ camel_case_app_name }} updated successfully'},
+        tags=['{{ camel_case_app_name }}_Bulk']
     )
     def put(self, request):
-        # Handling bulk update
-        data = request.data
-        with transaction.atomic():
-            for item in data:
-                {{ camel_case_app_name }}, created = {{ camel_case_app_name }}.objects.update_or_create(
-                    id=item.get('id'),
-                    defaults={
-                        '{{ camel_case_app_name }}': item.get('xxxx'),
-                    }
-                )
-        return Response({'status': 'Updated products successfully'}, status=status.HTTP_200_OK)
+        try:
+            data = request.data
+            with transaction.atomic():
+                updated_list, created_list = [], []
+                for item in data:
+                    {{ camel_case_app_name }}, created = {{ camel_case_app_name }}.objects.update_or_create(
+                        id=item.get('id'),
+                        defaults={
+                            '{{ camel_case_app_name }}_name': item.get('{{ camel_case_app_name }}_name'),
+                        }
+                    )
+                    if created:
+                        created_list.append({{ camel_case_app_name }}.id)
+                    else:
+                        updated_list.append({{ camel_case_app_name }}.id)
+            return Response({'detail': '{{ camel_case_app_name }} updated successfully',
+                            'updated': updated_list, 'created': created_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e), status=status.HTTP_400_BAD_REQUEST})
